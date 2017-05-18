@@ -52,35 +52,31 @@ public class App
         
           
        //*****************get the recents tweets of my account*************
-       /* 
+       
         List<Status> statuses = TweetAPI.newTweets(twitter);
         for (Status status : statuses) {
             System.out.println(status.getUser().getName()+ " -> " +
                                status.getText());
+            //System.out.println("OVER 140 C -> " + status.getRetweetedStatus().getText());
             String urls= "https://twitter.com/" + status.getUser().getScreenName() 
             	    + "/status/" + status.getId();
             System.out.println("Post Url -> "+urls);
             System.out.println("Status getLocation -> "+status.getUser().getLocation());
             System.out.println("Number of Retweets -> "+status.getRetweetCount());
             System.out.println("Status getURL -> "+status.getUser().getURL());
+            System.out.println("O getText -> "+ status.getText() );
+            TweetAPI.linkifyTweet(status.getText());
+            //System.out.println("NOVA-> "+ nova);
             System.out.println("\n");
             System.out.println("\n");
             
         }
-        */
+        
         //************Send a message for a specific user***************
         //TweetAPI.SendMessage(twitter, "Olá Luís 222", "@asdasdafsw");
         
-        System.out.println("DONE ");
-        /*
-        Query query = new Query("java");  
-        QueryResult result = twitter.search(query);
-        System.out.println("OLHA OS TWEETS : " + result.getCount());
-        System.out.println("OLHA OS TWEETS : " + result.getMaxId());
-        System.out.println("retweet "+ twitter.toString());
-		*/
-        
-        
+      
+    
         //tratamento do ficheiro
         /*TweetAPI.ficheiro(twitter, "teste", "MotoGP");
         List<Status> statuses2 = TweetAPI.tweetsUtilizador(twitter, "@MotoGP");
@@ -96,7 +92,7 @@ public class App
       
       //*******************Search Querys**********************
         
-        TweetAPI.searchQuery(twitter);
+        //TweetAPI.searchQuery(twitter);
         
         
         

@@ -7,6 +7,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import twitter4j.DirectMessage;
 import twitter4j.Query;
@@ -36,10 +38,10 @@ public class TweetAPI {
 	}  
 	
 	public static void searchQuery(Twitter twitter) throws IOException{
-		//BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		System.out.println("Insira a sua Query: \n");
-		//String args[] = br.readLine();
-		String args = "motoGP";
+		String args = br.readLine();
+		
 		if(args.length() < 1){
 			System.out.println("java twitter4j.examples.search.SearchTweets [query]");
             System.exit(-1);
@@ -52,6 +54,7 @@ public class TweetAPI {
                 List<Status> tweets = result.getTweets();
                 for (Status tweet : tweets) {
                     System.out.println("@" + tweet.getUser().getScreenName() + " -> " + tweet.getText());
+                    System.out.println("\n");
                 }
             } while ((query = result.nextQuery()) != null);
             System.exit(0);
@@ -63,6 +66,46 @@ public class TweetAPI {
 		}
 		
 	}
+	
+	public static String linkifyTweet(String tweet) {
+	      Pattern pattern;
+	      Matcher matcher;
+	      
+	      String url="";
+	      String hashtag="";
+	      String user="";
+
+	      String regex_url = "((https?://\\S+)|(www.\\S+))";
+	      String regex_hashtag = "#(\\w+)";
+	      String regex_user = "@(\\w+)";
+
+	      //regex to apply links to all urls in the tweet
+	      pattern = Pattern.compile(regex_url);
+	      System.out.println("PATTERN = "+ pattern);
+	      matcher = pattern.matcher(tweet);
+	      System.out.println("MATCHER = "+ matcher);
+	      if (matcher.find()) {
+	    	  //url++;
+	    	  System.out.println("MATCHER = "+ matcher);
+	           //tweet = tweet.replaceAll(regex_url, "<a target=\"_blank\" href=\"$1\">$1</a>");
+	      }
+
+	      //regex to apply links to all hashtags in the tweet
+	      pattern = Pattern.compile(regex_hashtag);
+	      matcher = pattern.matcher(tweet);
+	      if (matcher.find()) {
+	           //tweet = tweet.replaceAll(regex_hashtag, "<a target=\"_blank\" href=\"https://www.twitter.com/hashtag/$1?src=hash\">#$1</a>");
+	      }
+
+	      //regex to apply links to all users in the tweet
+	      pattern = Pattern.compile(regex_user);
+	      matcher = pattern.matcher(tweet);
+	      if (matcher.find()) {
+	           //tweet = tweet.replaceAll(regex_user, "<a target=\"_blank\" href=\"https://www.twitter.com/$1\">@$1</a>");
+	      }
+	      //System.out.println(tweet);
+	      return tweet;
+	 }
 	
 	public static List<Status> tweetsUtilizador(Twitter twitter, String twitterID)  
 	         throws TwitterException {    
