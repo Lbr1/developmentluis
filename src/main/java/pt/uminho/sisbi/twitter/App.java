@@ -1,8 +1,8 @@
-package pt.uminho.sisbi.twetter;
+package pt.uminho.sisbi.twitter;
 import java.io.IOException;
 import java.util.*;
 
-import pt.uminho.sisbi.twetter.api.TweetAPI;
+import pt.uminho.sisbi.twitter.api.TweetAPI;
 import twitter4j.*;
 import twitter4j.auth.AccessToken;
 import twitter4j.conf.*;
@@ -52,7 +52,7 @@ public class App
         
           
        //*****************get the recents tweets of my account*************
-       
+       /*
         List<Status> statuses = TweetAPI.newTweets(twitter);
         for (Status status : statuses) {
             System.out.println(status.getUser().getName()+ " -> " +
@@ -71,7 +71,7 @@ public class App
             System.out.println("\n");
             
         }
-        
+        */
         //************Send a message for a specific user***************
         //TweetAPI.SendMessage(twitter, "Olá Luís 222", "@asdasdafsw");
         
@@ -92,7 +92,7 @@ public class App
       
       //*******************Search Querys**********************
         
-        //TweetAPI.searchQuery(twitter);
+        TweetAPI.searchQuery(twitter);
         
         
         

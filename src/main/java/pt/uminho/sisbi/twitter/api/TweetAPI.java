@@ -1,4 +1,4 @@
-package pt.uminho.sisbi.twetter.api;
+package pt.uminho.sisbi.twitter.api;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -54,6 +54,7 @@ public class TweetAPI {
                 List<Status> tweets = result.getTweets();
                 for (Status tweet : tweets) {
                     System.out.println("@" + tweet.getUser().getScreenName() + " -> " + tweet.getText());
+                    linkifyTweet(tweet.getText());  
                     System.out.println("\n");
                 }
             } while ((query = result.nextQuery()) != null);
@@ -71,9 +72,6 @@ public class TweetAPI {
 	      Pattern pattern;
 	      Matcher matcher;
 	      
-	      String url="";
-	      String hashtag="";
-	      String user="";
 
 	      String regex_url = "((https?://\\S+)|(www.\\S+))";
 	      String regex_hashtag = "#(\\w+)";
@@ -94,13 +92,18 @@ public class TweetAPI {
 	      pattern = Pattern.compile(regex_hashtag);
 	      matcher = pattern.matcher(tweet);
 	      if (matcher.find()) {
+	    	  System.out.println("oi");
+	    	  System.out.println("MATCHER hash = "+ matcher);
 	           //tweet = tweet.replaceAll(regex_hashtag, "<a target=\"_blank\" href=\"https://www.twitter.com/hashtag/$1?src=hash\">#$1</a>");
+	    	  tweet = tweet.replaceAll(regex_hashtag, "hash");
+	    	  System.out.println(tweet);
 	      }
-
+	      System.out.println("passei por aqui");
 	      //regex to apply links to all users in the tweet
 	      pattern = Pattern.compile(regex_user);
 	      matcher = pattern.matcher(tweet);
 	      if (matcher.find()) {
+	    	  System.out.println("oi2");
 	           //tweet = tweet.replaceAll(regex_user, "<a target=\"_blank\" href=\"https://www.twitter.com/$1\">@$1</a>");
 	      }
 	      //System.out.println(tweet);
