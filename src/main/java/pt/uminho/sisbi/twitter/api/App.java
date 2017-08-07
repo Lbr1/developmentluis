@@ -1,8 +1,14 @@
-package pt.uminho.sisbi.twitter;
+package main.java.pt.uminho.sisbi.twitter.api;
 import java.io.IOException;
 import java.util.*;
 
+import org.apache.lucene.index.MergePolicy.OneMergeProgress.PauseReason;
+import org.apache.lucene.store.SleepingLockWrapper;
+
+import com.google.gson.Gson;
+
 import pt.uminho.sisbi.twitter.api.TweetAPI;
+import restClient.restAPI;
 import twitter4j.*;
 import twitter4j.auth.AccessToken;
 import twitter4j.conf.*;
@@ -13,21 +19,22 @@ import twitter4j.conf.*;
  */
 public class App 
 {
-    public static void main( String[] args ) throws TwitterException, IOException
+    public static void main( String[] args ) throws TwitterException, IOException, JSONException
     {
     	
     	//TweetAPI api = new TweetAPI();
     	
         System.out.println( "Hello World!" );
+        System.out.println( "Loading ...." );
         
+        
+        List<String> lista = new ArrayList<>();
+      //Consumer Key
         String consumerKey = "9Q0DpYL9vJtZcuxNinsA1RjWn";
-        
         //Consumer Secret
         String consumerSecret = "qohM464rRWVYXcNPmrOI7qhkqO1HJHjtGDXkxl0MsLTMdr7AAw";
- 
         //Access Token
         String accessToken = "2841171466-dL9I79GWTG6QKEZW5Swy3e455EXermjkDGycTng";
- 
         //Access Token Secret
         String accessTokenSecret = "tccuixlMuOK7r4H2Eu7jWVa5MDlp9FOohqkX3nbjSNU8N";
         
@@ -40,6 +47,48 @@ public class App
       //setup OAuth Access Token
         twitter.setOAuthAccessToken(new AccessToken(accessToken, accessTokenSecret));
         
+        
+        
+        restAPI.cenas();
+       // search for user and return a json
+        /*
+        System.out.println("Procurando.....");
+        JSONObject jsonObj=new JSONObject();
+        JSONObject jsonObj2=new JSONObject();
+        jsonObj=TweetAPI.jSONforUser(twitter,"@lfrancobastos");
+        jsonObj2=TweetAPI.jSONforUser(twitter,"@LB");
+        System.out.println("Imprimindo.....");
+        System.out.println(jsonObj);
+        System.out.println(jsonObj2);
+        /*
+        
+        
+        //search for key and date
+        
+        /*
+        List<Tweets> tweetsList = TweetAPI.searchQuerybyDate(twitter);
+        for(Tweets tw:tweetsList){
+        	System.out.println(tw);
+        }
+        */
+        
+        //search for key and date and return json
+        /*
+        System.out.println("Procurando.....");
+        JSONObject jsonObj=new JSONObject();
+        jsonObj=TweetAPI.jSONforKeyWord(twitter);
+        System.out.println("Imprimindo.....");
+        System.out.println(jsonObj);
+        */
+        
+        
+        
+        
+        
+        
+        
+        
+        
         /*System.out.println("O ScreenName do Twitter "+ twitter.getScreenName());
         System.out.println("Os Tweets do Twitter "+ twitter.tweets());
         System.out.println("Os Friends do Twiter "+ twitter.getFriendsIDs(1));
@@ -49,7 +98,7 @@ public class App
         System.out.println("Languages "+ twitter.getLanguages());
         
         */
-        
+        //TweetAPI.cenas();
           
        //*****************get the recents tweets of my account*************
        /*
@@ -71,18 +120,26 @@ public class App
             System.out.println("\n");
             
         }
-        */
+        /*
         //************Send a message for a specific user***************
         //TweetAPI.SendMessage(twitter, "Olá Luís 222", "@asdasdafsw");
-        
+        */
       
-    
+        //System.out.println(TweetAPI.elasticJson(twitter));
+        //lista = TweetAPI.elasticJson(twitter);
+        //System.out.println(lista.getClass());
+        //Iterator<String> listaIterator = lista.iterator();
+		//while (listaIterator.hasNext()) {
+			//String json = new Gson().toJson(listaIterator.next());
+			//System.out.println("Aqui esta -> " +listaIterator.next());
+			//System.out.println("Aqui esta -> " +json);
+		//}
         //tratamento do ficheiro
-        /*TweetAPI.ficheiro(twitter, "teste", "MotoGP");
-        List<Status> statuses2 = TweetAPI.tweetsUtilizador(twitter, "@MotoGP");
-        System.out.println("OLHA OS TWEETS2: " + statuses2.toString());
-        System.out.println("OLHA OS TWEETS3: " + statuses2.size());
- */
+       //TweetAPI.ficheiro(twitter, "got2", "Game of Thrones");
+        //List<Status> statuses2 = TweetAPI.tweetsUtilizador(twitter, "@MotoGP");
+        //System.out.println("OLHA OS TWEETS2: " + statuses2.toString());
+        //System.out.println("OLHA OS TWEETS3: " + statuses2.size());
+ 
         
         
         //*******************Create a Tweet**********************
@@ -92,7 +149,7 @@ public class App
       
       //*******************Search Querys**********************
         
-        TweetAPI.searchQuery(twitter);
+        //TweetAPI.searchQuery(twitter);
         
         
         
