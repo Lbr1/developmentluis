@@ -44,8 +44,6 @@ extends TestCase
 
 	public void te()
 	{
-		Client client = new TransportClient();
-//                .addTransportAddress(new InetSocketTransportAddress("localhost", 9300))
-//                .addTransportAddress(new InetSocketTransportAddress("localhost", 9301));
+		
 	}
 }
