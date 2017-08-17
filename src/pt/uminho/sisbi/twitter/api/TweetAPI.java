@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import main.java.pt.uminho.sisbi.twitter.api.Tweets;
+import restClient.RestAPI;
 import twitter4j.DirectMessage;
 import twitter4j.JSONArray;
 import twitter4j.JSONException;
@@ -29,9 +30,14 @@ import twitter4j.QueryResult;
 import twitter4j.Status;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
+
+import org.apache.http.HttpEntity;
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.IndicesAdminClient;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
@@ -53,10 +59,13 @@ public class TweetAPI {
 		System.out.println( "1" );
 		TransportClient client =new PreBuiltTransportClient(Settings.EMPTY)
 				.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName("localhost"), 9300));
-		//System.out.println( "2" );
+		System.out.println( "2" );
 
 		
-		SearchResponse response = client.prepareSearch("game").get();
+		DeleteIndexResponse deleteResponse = client.admin().indices().delete(new DeleteIndexRequest("posts")).actionGet();
+		client.admin().indices().prepareCreate("posts").get();
+		
+		SearchResponse response = client.prepareSearch("posts").get();
 		System.out.println("total Shards" + response.getTotalShards());
 		System.out.println("get took"+response.getTook());
 		System.out.println(response);
@@ -86,11 +95,21 @@ public class TweetAPI {
      			
      			Tweets tweetItem = new Tweets();
    
-     			tweetItem.setTweetText(stat.getText());
-     			item.put("TEXT", stat.getText());
-     			tweetItem.setTweetUserName(stat.getUser().getScreenName());
-     			item.put("USER", stat.getUser().getScreenName());
      			tweetItem.setId(stat.getId());
+     			item.put("ID", stat.getId());
+     			tweetItem.setTweetLang(stat.getLang());
+     			item.put("TweetLang", stat.getLang());
+     			tweetItem.setTweetText(stat.getText());
+     			item.put("Text", stat.getText());
+     			tweetItem.setTweetUserName(stat.getUser().getScreenName());
+     			item.put("Screen_name", stat.getUser().getScreenName());
+     			tweetItem.setLanguage(stat.getUser().getLang());
+     			item.put("Language", stat.getUser().getLang());
+     			tweetItem.setTweetUserName(stat.getUser().getName());
+     			item.put("Name", stat.getUser().getName());
+     			tweetItem.setLocation(stat.getUser().getLocation());
+     			item.put("Location", stat.getUser().getLocation());
+     			
      			tweetList.add(tweetItem);
      			array.put(item);
      		}
@@ -125,10 +144,16 @@ public class TweetAPI {
 					System.out.println(tweets.size());
 					for (Status tweet : tweets) {
 						JSONObject item = new JSONObject();
-						item.put("ID", tweet.getId());
-						item.put("USER", tweet.getUser().getScreenName());
-						item.put("TEXT", tweet.getText());
-						array.put(item);
+		     			
+		     			item.put("ID", tweet.getId());		     			
+		     			item.put("TweetLang", tweet.getLang());		     		
+		     			item.put("Text", tweet.getText());		     			
+		     			item.put("Screen_name", tweet.getUser().getScreenName());		     			
+		     			item.put("Language", tweet.getUser().getLang());		     			
+		     			item.put("Name", tweet.getUser().getName());
+		     			item.put("Location", tweet.getUser().getLocation());
+
+		     			array.put(item);
 					}
 				} while ((query = result.nextQuery()) != null);
 			} catch (TwitterException e) {
@@ -138,6 +163,60 @@ public class TweetAPI {
 			return json;
    
 	}
+	// get a List with Text
+	
+	public static List<String> getTextFromJson(JSONObject json) throws JSONException{
+		List<String> textList = new ArrayList<>();
+		
+        JSONArray arr = json.getJSONArray("Tweets");
+		for (int i = 0; i < arr.length(); i++)
+		{
+		   
+			textList.add(arr.getJSONObject(i).getString("Text"));
+		    
+			
+		}
+        return textList;
+	}
+	//return a json with my recent tweets
+		public static JSONObject newTweetsJson(Twitter twitter) throws TwitterException, JSONException, IllegalStateException, IOException, InterruptedException { 
+			JSONObject json= new JSONObject();
+	        JSONArray array=new JSONArray();
+	        List<HttpEntity> listHttp=new ArrayList<>();
+	       
+	         
+	        try {
+				
+					List<Status> statuses = twitter.getHomeTimeline();
+					System.out.println(statuses.size());
+					for (Status tweet : statuses) {
+						JSONObject item = new JSONObject();
+						item.put("ID", tweet.getId());		     			
+		     			item.put("TweetLang", tweet.getLang());		     		
+		     			item.put("Text", tweet.getText());		     			
+		     			item.put("Screen_name", tweet.getUser().getScreenName());		     			
+		     			item.put("Language", tweet.getUser().getLang());		     			
+		     			item.put("Name", tweet.getUser().getName());
+		     			item.put("Location", tweet.getUser().getLocation());
+		     			HttpEntity ent=RestAPI.createHttpEntity(Long.toString(tweet.getId()), tweet.getLang(), tweet.getText(),
+		     					tweet.getUser().getScreenName(), tweet.getUser().getName(), tweet.getUser().getLocation(),
+		     					tweet.getUser().getLocation());
+		     			
+		     			listHttp.add(ent);
+						array.put(item);
+					}
+				 
+			} catch (TwitterException e) {
+				e.printStackTrace();
+			}
+	        HttpEntity[] httpArray = new HttpEntity[ listHttp.size() ];
+	        System.out.println("Screen name: "+ twitter.getScreenName());
+	        RestAPI.putListOfTweets(twitter.getScreenName(), "tweet", listHttp.toArray(httpArray));
+			json.put("Tweets", array);
+	        return json;  
+	    }
+		
+		
 	//Get my recent tweets
 	public static List<Status> newTweets(Twitter twitter) throws TwitterException {   
         List<Status> statuses = twitter.getHomeTimeline();  

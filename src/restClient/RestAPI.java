@@ -1,6 +1,9 @@
 package restClient;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -9,18 +12,29 @@ import java.util.List;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseListener;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonSyntaxException;
@@ -31,15 +45,35 @@ import twitter4j.JSONObject;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
-public class restAPI {
+public class RestAPI {
 	
 	
-	public static void cenas() throws IOException, JSONException{
-		RestClient restClient = RestClient.builder(
-				new HttpHost("localhost", 9200, "http"),
-				new HttpHost("localhost", 9201, "http")).build();
+	public static void cenas2() throws IOException, JSONException{
+		//RestClient restClient = RestClient.builder(
+		//		new HttpHost("localhost", 9200, "http"),
+		//		new HttpHost("localhost", 9201, "http")).build();
+		
+		
+		
+		final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+		credentialsProvider.setCredentials(AuthScope.ANY,
+		        new UsernamePasswordCredentials("luis", "elastic"));
+
+		RestClient restClient = RestClient.builder(new HttpHost("localhost", 9200))
+		        .setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
+		            @Override
+		            public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
+		                return httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+		            }
+		        })
+		        .build();
+		
 		
 		///restClient.close();
+		
+		
+		
+		
 		RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
 		Header[] defaultHeaders = new Header[]{new BasicHeader("header", "value")};
 		builder.setDefaultHeaders(defaultHeaders);
@@ -78,13 +112,40 @@ public class restAPI {
 		//Map<String, String> paramMap = new HashMap<String, String>();
 		//paramMap.put("q", "user:Kimchy");
 		//paramMap.put("pretty", "true");
+		
+		HttpEntity entity1 = new NStringEntity(
+				 "{\"from\" : 0, \"size\" :"+1+",\n" +
+					"    \"query\" : {\n" +
+					"    \"match_all\": { } \n" +
+					"} \n"+
+				"}", ContentType.APPLICATION_JSON);
+		
+		
+		
+		
+	
 									                                                               
-	Response response = restClient.performRequest("GET", "/super/_search");
-	List<JSONObject> jsonList = new ArrayList<>();
+	Response response = restClient.performRequest("GET", "/posts/_search?scroll=1m",Collections.singletonMap("pretty", "true"),entity1);
+	
+	//System.out.println(EntityUtils.toString(response.getEntity()));
+	String stringJson = EntityUtils.toString(response.getEntity());
+	JSONObject json =new JSONObject();
+	JSONObject ddd= new JSONObject(stringJson);
+	String id = ddd.getString("_scroll_id");
+	System.out.println("Scroll_id "+id+"\n");
+	
+	//HttpEntity entity2 = new NStringEntity(
+	//		 "{\"scroll_id\" : \""+ id+
+	//		"\"}\n", ContentType.APPLICATION_JSON);
+	//System.out.println("-> "+"{\"scroll_id\" : \""+ id+
+	//		"\"}\n");
+	//Response response2 = restClient.performRequest("GET", "/posts/_search",Collections.singletonMap("pretty", "true"),entity2);
+	//System.out.println("SECOND "+EntityUtils.toString(response2.getEntity()));
+	/*List<JSONObject> jsonList = new ArrayList<>();
 	JSONObject jsonListFinal = new JSONObject();
 	JSONObject json =new JSONObject(EntityUtils.toString(response.getEntity()));
-	JSONObject head =new JSONObject();
-	JSONArray array =new JSONArray();
+	//JSONObject head =new JSONObject();
+	//JSONArray array =new JSONArray();
 	JSONObject obj = json.getJSONObject("hits");
 	JSONArray arr = obj.getJSONArray("hits");
 	for (int i = 0; i < arr.length(); i++)
@@ -175,7 +236,7 @@ public class restAPI {
 	
 	//PUT more than 1 tweet -  Asynchronous mode 
 
-	public void putListOfTweets(String indexDir,HttpEntity[] entityArray,RestClient restClient) throws IOException, InterruptedException{
+	public void putListOfTweetsId(String indexDir,HttpEntity[] entityArray,RestClient restClient) throws IOException, InterruptedException{
 		int numRequests = entityArray.length;
 		final CountDownLatch latch = new CountDownLatch(numRequests);
 		for (int i = 0; i < numRequests; i++) {
@@ -202,7 +263,36 @@ public class restAPI {
 		latch.await();
 	}		
 	
-	
+	//PUT more than 1 tweet without ID-  Asynchronous mode 
+
+		public static void putListOfTweets(String index,String type,HttpEntity[] entityArray) throws IOException, InterruptedException{
+			RestClient restClient = initAPI();
+			int numRequests = entityArray.length;
+			final CountDownLatch latch = new CountDownLatch(numRequests);
+			for (int i = 0; i < numRequests; i++) {
+				restClient.performRequestAsync(
+				"POST",
+				"/"+index+"/"+type,
+				Collections.<String, String>emptyMap(),
+				entityArray[i],
+				new ResponseListener() {
+				@Override
+				public void onSuccess(Response response) {
+					System.out.println(response);
+					latch.countDown();
+				}
+				@Override
+				public void onFailure(Exception exception) {
+				     System.out.println(exception.getMessage());
+					 latch.countDown();
+				}
+				}
+			    );
+			}
+			//wait for completion of all requests
+			latch.await();
+			closeAPI(restClient);
+		}		
 	//Search the document using Query Params
 
 			
@@ -245,7 +335,8 @@ public class restAPI {
 	}		
 	//Search the document using Query DSL
 
-	public Response SearchDocQueryDSL	(String key,String value,String indexDir,RestClient restClient) throws IOException{
+	public static Response SearchDocQueryDSL	(String key,String value,String indexDir) throws IOException{
+		RestClient restClient = initAPI();
 		HttpEntity entity1 = new NStringEntity(
 				 "{\n" +
 				"    \"query\" : {\n" +
@@ -253,30 +344,43 @@ public class restAPI {
 				"} \n"+
 				"}", ContentType.APPLICATION_JSON);
 					                                                               
-				Response response = restClient.performRequest("GET", indexDir,Collections.singletonMap("pretty", "true"),
+				Response response = restClient.performRequest("GET", "/"+indexDir+"/_search",Collections.singletonMap("pretty", "true"),
 					                                                           entity1);
+		closeAPI(restClient);
 		return response;
 	}	
+
+	//get a String with documents jsonformat from a index 
 	
-	//get a String with documents jsonformat from a index
-	public String getFrom(String method,String indexDir,RestClient restClient) throws IOException{
-		Response response = restClient.performRequest(method, indexDir);
+	public static String getFromIndex(String method,String index) throws IOException{
+		RestClient restClient = initAPI();
+		Response response = restClient.performRequest(method, "/"+index+"/_search");
 		String stringResponse =EntityUtils.toString(response.getEntity());
-		
+		closeAPI(restClient);
+		return stringResponse;
+	}
+	
+	//get a String with documents jsonformat from a index with type
+	
+	public static String getFromIndexAndType(String method,String index,String type) throws IOException{
+		RestClient restClient = initAPI();
+		Response response = restClient.performRequest(method, "/"+index+"/"+type+"/_search");
+		String stringResponse =EntityUtils.toString(response.getEntity());
+		closeAPI(restClient);
 		return stringResponse;
 	}
 	
 	
-	//set a list of headears
-		public void setHeaders(RestClient restClient) throws IOException{
-			RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
-			Header[] defaultHeaders = new Header[]{new BasicHeader("header", "value")};
-			builder.setDefaultHeaders(defaultHeaders);
-			builder.setMaxRetryTimeoutMillis(10000);
-		}
+	//set a list of headers
+	public void setHeaders(RestClient restClient) throws IOException{
+		RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
+		Header[] defaultHeaders = new Header[]{new BasicHeader("header", "value")};
+		builder.setDefaultHeaders(defaultHeaders);
+		builder.setMaxRetryTimeoutMillis(10000);
+	}
 		
 	// Return a POJO with main info
-	public List<TweetsPosts> getPojo(String response) throws JsonSyntaxException, JSONException{
+	public static List<TweetsPosts> getPojo(String response) throws JsonSyntaxException, JSONException{
 		Gson gsonPojo = new Gson();
 		List<TweetsPosts> pojoList = new ArrayList<>();//tem de ser criado como global
 		
@@ -292,19 +396,32 @@ public class restAPI {
 		}
 		return pojoList;
 	}
+	//PUT a new doc without ID 
 	
-	
-	//PUT a new doc 
-	
-	public Response putNewDoc(String jsonString,String indexDir,RestClient restClient) throws IOException{
-			Map<String, String> params = Collections.emptyMap();
+	public static Response putNewDoc(String jsonString,String indexDir,String type) throws IOException{
+		RestClient restClient=initAPI();	
+		Map<String, String> params = Collections.emptyMap();
 			HttpEntity entity = new NStringEntity(jsonString, ContentType.APPLICATION_JSON);
-			Response response= restClient.performRequest("PUT", indexDir, params, entity);
+			Response response= restClient.performRequest("POST", "/"+indexDir+"/"+type, params, entity);
+		closeAPI(restClient);
 		return response;
 	}
+	
+	
+	//PUT a new doc with ID
+	
+	public static Response putNewDocID(String jsonString,String index,String type, String id) throws IOException{
+			RestClient restClient=initAPI();
+			Map<String, String> params = Collections.emptyMap();
+			HttpEntity entity = new NStringEntity(jsonString, ContentType.APPLICATION_JSON);
+			Response response= restClient.performRequest("PUT", "/"+index+"/"+type+"/"+id, params, entity);
+			closeAPI(restClient);
+		return response;
+	}
+	
 	//GET the posts from a index(group of documents)
 
-	public List<String> getPosts(String response) throws JSONException{
+	public static List<String> getPosts(String response) throws JSONException{
 		List<String> textList = new ArrayList<>();
 		//String response=EntityUtils.toString(response51.getEntity());
 		JSONObject json =new JSONObject(response);
@@ -327,7 +444,7 @@ public class restAPI {
 	
 	//GET the List of POJO from a index(group of documents)
 
-	public List<TweetsPosts> getPojoFromIndex(String response) throws JSONException{
+	public static List<TweetsPosts> getPojoFromIndex(String response) throws JSONException{
 		List<TweetsPosts> pojoList = new ArrayList<>();
 		Gson gsonPojo = new Gson();
 		JSONObject json =new JSONObject(response);
@@ -338,7 +455,7 @@ public class restAPI {
 		for (int i = 0; i < arr.length(); i++)
 		{
 
-			JSONObject source =new JSONObject(arr.getJSONObject(i).getString("_source"));
+			//JSONObject source =new JSONObject(arr.getJSONObject(i).getString("_source"));
 			TweetsPosts tweetPojo = new TweetsPosts();
 			tweetPojo = gsonPojo.fromJson(arr.getJSONObject(i).toString(), TweetsPosts.class);
 			pojoList.add(tweetPojo);
@@ -349,41 +466,40 @@ public class restAPI {
 	
 	//GET list of json Objets from a index(group of documents)
 
-		public List<JSONObject> getListJsonFromIndex(String response) throws JSONException{
-			List<JSONObject> jsonList = new ArrayList<>();
-			JSONObject jsonListFinal = new JSONObject();
-			JSONObject json =new JSONObject(response);
-			JSONObject head =new JSONObject();
-			JSONArray array =new JSONArray();
-			JSONObject obj = json.getJSONObject("hits");
-			JSONArray arr = obj.getJSONArray("hits");
-			for (int i = 0; i < arr.length(); i++)
-			{
-
-				JSONObject source =new JSONObject(arr.getJSONObject(i).getString("_source"));
-				JSONObject item = new JSONObject();
-				item.put("ID", source.getLong("id"));
-				item.put("TweetLang", source.getString("lang"));
-				item.put("Text", source.getString("text"));
-				JSONObject user = source.getJSONObject("user");
-				item.put("Screen_name", user.getString("screen_name"));
-				item.put("Language", user.getString("lang"));
-				item.put("Name", user.getString("name"));
-				item.put("Location", user.getString("location"));
-				jsonList.add(item);
-				}
-				jsonListFinal.put("Tweet", jsonList);
-				return jsonList;
-			}
-	
-//GET a JSON with ObjetsFinal from a index(group of documents)
-
-	public JSONObject getJsonFromIndex(String response) throws JSONException{
+	public static List<JSONObject> getListJsonFromIndex(String response) throws JSONException{
 		List<JSONObject> jsonList = new ArrayList<>();
 		JSONObject jsonListFinal = new JSONObject();
 		JSONObject json =new JSONObject(response);
-		JSONObject head =new JSONObject();
-		JSONArray array =new JSONArray();
+		//JSONObject head =new JSONObject();
+		//JSONArray array =new JSONArray();
+		JSONObject obj = json.getJSONObject("hits");
+		JSONArray arr = obj.getJSONArray("hits");
+		for (int i = 0; i < arr.length(); i++)
+		{
+			JSONObject source =new JSONObject(arr.getJSONObject(i).getString("_source"));
+			JSONObject item = new JSONObject();
+			item.put("ID", source.getLong("id"));
+			item.put("TweetLang", source.getString("lang"));
+			item.put("Text", source.getString("text"));
+			JSONObject user = source.getJSONObject("user");
+			item.put("Screen_name", user.getString("screen_name"));
+			item.put("Language", user.getString("lang"));
+			item.put("Name", user.getString("name"));
+			item.put("Location", user.getString("location"));
+			jsonList.add(item);
+			}
+			jsonListFinal.put("Tweet", jsonList);
+			return jsonList;
+	}
+	
+//GET a JSON with ObjetsFinal from a index(group of documents)
+
+	public static JSONObject getJsonFromIndex(String response) throws JSONException{
+		List<JSONObject> jsonList = new ArrayList<>();
+		JSONObject jsonListFinal = new JSONObject();
+		JSONObject json =new JSONObject(response);
+		//JSONObject head =new JSONObject();
+		//JSONArray array =new JSONArray();
 		JSONObject obj = json.getJSONObject("hits");
 		JSONArray arr = obj.getJSONArray("hits");
 		for (int i = 0; i < arr.length(); i++)
@@ -405,21 +521,61 @@ public class restAPI {
 		return jsonListFinal;
 	}
 	
+	//Create a httpEntiy from string
+	public static HttpEntity createHttpEntity(String id,String tweetLang, String text, String screenName, String language,
+		String name, String location){
+		
+		String jsonString = "{" +
+	            "\"ID\":\""+id+"\"," +
+	           "\"TweetLang\":\""+tweetLang+"\"," +
+	           "\"Text\":\""+text+"\","+
+	           "\"Screen_name\":\""+screenName+"\","+
+	           "\"Language\":\""+language+"\","+
+	           "\"Name\":\""+name+"\","+
+	          "\"Location\":\""+location+"\"" +
+	        "}";
+		
+		HttpEntity entity= new NStringEntity(
+				 jsonString, ContentType.APPLICATION_JSON);
+		return entity;	
+	}
+	//Create a string
+		public static String createString(String id,String tweetLang, String text, String screenName, String language,
+			String name, String location){
+			
+			String jsonString = "{" +
+		            "\"ID\":\""+id+"\"," +
+		           "\"TweetLang\":\""+tweetLang+"\"," +
+		           "\"Text\":\""+text+"\","+
+		           "\"Screen_name\":\""+screenName+"\","+
+		           "\"Language\":\""+language+"\","+
+		           "\"Name\":\""+name+"\","+
+		          "\"Location\":\""+location+"\"" +
+		        "}";
+			
+			
+			return jsonString;	
+		}
+		
 //Read a JSON Finale
 
-	public void ReadJson(JSONObject json) throws JSONException{
-
-		JSONArray arr = json.getJSONArray("Tweet");
-		for (int i = 0; i < arr.length(); i++)
-		{
-			System.out.println(arr.getJSONObject(i).getString("Language"));
+	public static void ReadJson(JSONObject json) throws JSONException{
+		try {
+			JSONArray arr = json.getJSONArray("Tweet");
+			for (int i = 0; i < arr.length(); i++)
+			{
+				System.out.println(arr.getJSONObject(i).getString("Language"));
+			}
+		} catch (Exception e) {
+			System.out.println("ERROR :"+e);
 		}
+		
 			
 	}	
 		
 	
 	//init the rest client
-	public  RestClient initAPI(){
+	public static  RestClient initAPI(){
 		RestClient restClient = RestClient.builder(
 				new HttpHost("localhost", 9200, "http"),
 				new HttpHost("localhost", 9201, "http")).build();
@@ -427,7 +583,7 @@ public class restAPI {
 	}
 	
 	// close the restClient
-	public void closeAPI(RestClient client) throws IOException{
+	public static void closeAPI(RestClient client) throws IOException{
 		client.close();
 	}
 			
