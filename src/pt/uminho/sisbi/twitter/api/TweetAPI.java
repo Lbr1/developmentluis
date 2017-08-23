@@ -11,6 +11,7 @@ import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,12 +20,15 @@ import java.util.stream.Collectors;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import POJO.Tuple;
 import main.java.pt.uminho.sisbi.twitter.api.Tweets;
 import restClient.RestAPI;
+import transportClient.Transport;
 import twitter4j.DirectMessage;
 import twitter4j.JSONArray;
 import twitter4j.JSONException;
 import twitter4j.JSONObject;
+import twitter4j.Paging;
 import twitter4j.Query;
 import twitter4j.QueryResult;
 import twitter4j.Status;
@@ -80,6 +84,31 @@ public class TweetAPI {
 		
 		
 	}*/
+	//create json and insert on elasticSearch object from user timeline
+	public static List<Status> putDataforUser(Twitter twitter,String user) throws TwitterException, JSONException, IOException{
+		int pageno = 1;
+	    List<Status> statuses = new ArrayList<>();
+	    while (true) {
+
+	      try {
+
+	        int size = statuses.size(); 
+	        Paging page = new Paging(pageno++, 100);
+	        statuses.addAll(twitter.getUserTimeline(user, page));
+	        
+	        if (statuses.size() == size)
+	          break;
+	      }
+	      catch(TwitterException e) {
+
+	        e.printStackTrace();
+	      }
+	    }
+	    Transport.addIndexWithDocs(user, statuses);
+	    System.out.println("Concluido\n\n");
+	    return statuses;
+	}
+	
 	
 	// create json object from user timeline
 	public static JSONObject jSONforUser(Twitter twitter,String user) throws TwitterException, JSONException{
@@ -87,7 +116,7 @@ public class TweetAPI {
         JSONObject json= new JSONObject();
         JSONArray array=new JSONArray();
         
-        List<Status> statuses=Usertweets(twitter,user);
+        List<Status> statuses=getAllUsertweets(twitter,user);
      // iterate via "New way to loop"
      		System.out.println("\n==> "+ user + "Timeline ...");
      		for (Status stat : statuses) {
@@ -96,24 +125,22 @@ public class TweetAPI {
      			Tweets tweetItem = new Tweets();
    
      			tweetItem.setId(stat.getId());
-     			item.put("ID", stat.getId());
+     			item.put("id", stat.getId());
      			tweetItem.setTweetLang(stat.getLang());
-     			item.put("TweetLang", stat.getLang());
+     			item.put("lang", stat.getLang());
      			tweetItem.setTweetText(stat.getText());
-     			item.put("Text", stat.getText());
+     			item.put("text", stat.getText());
      			tweetItem.setTweetUserName(stat.getUser().getScreenName());
-     			item.put("Screen_name", stat.getUser().getScreenName());
-     			tweetItem.setLanguage(stat.getUser().getLang());
-     			item.put("Language", stat.getUser().getLang());
+     			item.put("screen_name", stat.getUser().getScreenName());
      			tweetItem.setTweetUserName(stat.getUser().getName());
-     			item.put("Name", stat.getUser().getName());
+     			item.put("name", stat.getUser().getName());
      			tweetItem.setLocation(stat.getUser().getLocation());
-     			item.put("Location", stat.getUser().getLocation());
+     			item.put("location", stat.getUser().getLocation());
      			
      			tweetList.add(tweetItem);
      			array.put(item);
      		}
-     		json.put("TWEET", array);
+     		json.put("tweets", array);
 
      			return json;
 	}
@@ -145,13 +172,12 @@ public class TweetAPI {
 					for (Status tweet : tweets) {
 						JSONObject item = new JSONObject();
 		     			
-		     			item.put("ID", tweet.getId());		     			
-		     			item.put("TweetLang", tweet.getLang());		     		
-		     			item.put("Text", tweet.getText());		     			
-		     			item.put("Screen_name", tweet.getUser().getScreenName());		     			
-		     			item.put("Language", tweet.getUser().getLang());		     			
-		     			item.put("Name", tweet.getUser().getName());
-		     			item.put("Location", tweet.getUser().getLocation());
+		     			item.put("id", tweet.getId());		     			
+		     			item.put("lang", tweet.getLang());		     		
+		     			item.put("text", tweet.getText());		     			
+		     			item.put("screen_name", tweet.getUser().getScreenName());		     					     			
+		     			item.put("name", tweet.getUser().getName());
+		     			item.put("location", tweet.getUser().getLocation());
 
 		     			array.put(item);
 					}
@@ -159,7 +185,7 @@ public class TweetAPI {
 			} catch (TwitterException e) {
 				e.printStackTrace();
 			}
-			json.put("Tweets", array);
+			json.put("tweets", array);
 			return json;
    
 	}
@@ -172,48 +198,37 @@ public class TweetAPI {
 		for (int i = 0; i < arr.length(); i++)
 		{
 		   
-			textList.add(arr.getJSONObject(i).getString("Text"));
+			textList.add(arr.getJSONObject(i).getString("text"));
 		    
 			
 		}
         return textList;
 	}
-	//return a json with my recent tweets
-		public static JSONObject newTweetsJson(Twitter twitter) throws TwitterException, JSONException, IllegalStateException, IOException, InterruptedException { 
-			JSONObject json= new JSONObject();
-	        JSONArray array=new JSONArray();
-	        List<HttpEntity> listHttp=new ArrayList<>();
-	       
-	         
-	        try {
-				
-					List<Status> statuses = twitter.getHomeTimeline();
-					System.out.println(statuses.size());
-					for (Status tweet : statuses) {
-						JSONObject item = new JSONObject();
-						item.put("ID", tweet.getId());		     			
-		     			item.put("TweetLang", tweet.getLang());		     		
-		     			item.put("Text", tweet.getText());		     			
-		     			item.put("Screen_name", tweet.getUser().getScreenName());		     			
-		     			item.put("Language", tweet.getUser().getLang());		     			
-		     			item.put("Name", tweet.getUser().getName());
-		     			item.put("Location", tweet.getUser().getLocation());
-		     			HttpEntity ent=RestAPI.createHttpEntity(Long.toString(tweet.getId()), tweet.getLang(), tweet.getText(),
-		     					tweet.getUser().getScreenName(), tweet.getUser().getName(), tweet.getUser().getLocation(),
-		     					tweet.getUser().getLocation());
-		     			
-		     			listHttp.add(ent);
-						array.put(item);
-					}
-				 
-			} catch (TwitterException e) {
-				e.printStackTrace();
-			}
-	        HttpEntity[] httpArray = new HttpEntity[ listHttp.size() ];
-	        System.out.println("Screen name: "+ twitter.getScreenName());
-	        RestAPI.putListOfTweets(twitter.getScreenName(), "tweet", listHttp.toArray(httpArray));
-			json.put("Tweets", array);
-	        return json;  
+	//return a json with my recent tweets and put on elasticSearch ********************************************************
+	
+		public static List<Status> newTweetsJson(Twitter twitter) throws TwitterException, JSONException, IllegalStateException, IOException, InterruptedException { 
+
+	        int pageno = 1;
+	        List<Status> statuses = new ArrayList<>();
+	        while (true) {
+
+	          try {
+
+	            int size = statuses.size(); 
+	            Paging page = new Paging(pageno++, 100);
+	            statuses.addAll(twitter.getHomeTimeline(page));
+	            
+	            if (statuses.size() == size)
+	              break;
+	          }
+	          catch(TwitterException e) {
+
+	            e.printStackTrace();
+	          }
+	        }
+	        Transport.addIndexWithDocs(twitter.getScreenName(), statuses);
+	        System.out.println("Concluido\n\n");
+	        return statuses;
 	    }
 		
 		
@@ -238,11 +253,18 @@ public class TweetAPI {
 	      return twitter.sendDirectMessage(destinatarioID, mensagem);  
 	}  
 	
-	//Search for a query by a keyword
-	public static void searchQuery(Twitter twitter) throws IOException{
+	//Search for a query by a keyword and return a HashMap<index,List<Status>> *****************************************************************************
+	public static Tuple searchQuery(Twitter twitter) throws IOException, JSONException{
+		//JSONObject json= new JSONObject();
+        //JSONArray array=new JSONArray();
+        Tuple res=new Tuple();
+        List<Status> listTweets = new ArrayList<>();
+        long lastID = Long.MAX_VALUE;
+        //Query query = new Query(args);
+      
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		System.out.println("Insira a sua Query: \n");
-		String args = br.readLine();
+		String args = br.readLine();	
 		
 		if(args.length() < 1){
 			System.out.println("java twitter4j.examples.search.SearchTweets [query]");
@@ -255,25 +277,182 @@ public class TweetAPI {
                 result = twitter.search(query);
                 List<Status> tweets = result.getTweets();
                 for (Status tweet : tweets) {
-                    System.out.println("@" + tweet.getUser().getScreenName() + " -> " + tweet.getText());
-                    linkifyTweet(tweet.getText());  
-                    System.out.println("\n");
+                	listTweets.add(tweet);
+                	if(tweet.getId() < lastID) lastID = tweet.getId();
+                	/*JSONObject item = new JSONObject();
+					item.put("ID", tweet.getId());		     			
+					item.put("TweetLang", tweet.getLang());		     		
+					item.put("Text", tweet.getText());		     			
+					item.put("Screen_name", tweet.getUser().getScreenName());		     			
+					item.put("Language", tweet.getUser().getLang());		     			
+					item.put("Name", tweet.getUser().getName());
+					item.put("Location", tweet.getUser().getLocation());				
+					array.put(item);*/
+                	
                 }
+                query.setMaxId(lastID-1);
             } while ((query = result.nextQuery()) != null);
-            System.exit(0);
+            //System.exit(0);
 			
 		} catch (TwitterException te) {
 			te.printStackTrace();
             System.out.println("Failed to search tweets: " + te.getMessage());
             System.exit(-1);
 		}
-		
+		//json.put("Tweets", array);
+		res.setIndex(args);
+		res.setList(listTweets);
+		res.setLastID(lastID);
+		return res;
 	}
 	
-	//search query by date
+	//Search for a query by a keyword and last ID and return a Tuple ********************************
+	public static Tuple searchQueryLastID(Twitter twitter,long lastID) throws IOException, JSONException{
+		//JSONObject json= new JSONObject();
+        //JSONArray array=new JSONArray();
+        Tuple res=new Tuple();
+        List<Status> listTweets = new ArrayList<>();
+       
+      
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		System.out.println("Insira a sua Query: \n");
+		String args = br.readLine();	
+		
+		if(args.length() < 1){
+			System.out.println("java twitter4j.examples.search.SearchTweets [query]");
+            System.exit(-1);
+		}
+		try {
+			Query query = new Query(args);
+			query.setMaxId(lastID);
+            QueryResult result;
+            do {
+                result = twitter.search(query);
+                List<Status> tweets = result.getTweets();
+                for (Status tweet : tweets) {
+                	listTweets.add(tweet);
+                	if(tweet.getId() < lastID) lastID = tweet.getId();
+                	/*JSONObject item = new JSONObject();
+					item.put("ID", tweet.getId());		     			
+					item.put("TweetLang", tweet.getLang());		     		
+					item.put("Text", tweet.getText());		     			
+					item.put("Screen_name", tweet.getUser().getScreenName());		     			
+					item.put("Language", tweet.getUser().getLang());		     			
+					item.put("Name", tweet.getUser().getName());
+					item.put("Location", tweet.getUser().getLocation());
+					
+					array.put(item);*/
+                }
+                query.setMaxId(lastID-1);
+            } while ((query = result.nextQuery()) != null);
+            //System.exit(0);
+			
+		} catch (TwitterException te) {
+			te.printStackTrace();
+            System.out.println("Failed to search tweets: " + te.getMessage());
+            System.exit(-1);
+		}
+		//json.put("Tweets", array);
+		res.setIndex(args);
+		res.setList(listTweets);
+		
+		return res;
+	}
 	
+	
+	//Search for a query by a keyword and return a HashMap<index,List<Status>> V2*****************************************************************************
+		public static Tuple searchQueryV2(Twitter twitter) throws IOException, JSONException{
+	        int numberOfTweets = 5000;
+	        long lastID = Long.MAX_VALUE;
+	        System.out.println("LastID INIT: "+lastID);
+	        List<Status> tweets = new ArrayList<>();
+	        Tuple res=new Tuple();
+			BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+			System.out.println("Insira a sua Query: \n");
+			String args = br.readLine();
+			Query query = new Query(args);
+			
+			if(args.length() < 1){
+				System.out.println("java twitter4j.examples.search.SearchTweets [query]");
+	            System.exit(-1);
+			}
+			while (tweets.size () < numberOfTweets) {
+			    if (numberOfTweets - tweets.size() > 100)
+			      query.setCount(100);
+			    else 
+			      query.setCount(numberOfTweets - tweets.size());
+			    try {
+			      QueryResult result = twitter.search(query);
+			      tweets.addAll(result.getTweets());
+			      for (Status t: tweets){
+			        if(t.getId() < lastID) lastID = t.getId();
+			      }
+
+			    }
+
+			    catch (TwitterException te) {
+			    	System.out.println("Couldn't connect: " + te);
+			    }; 
+			    query.setMaxId(lastID-1);
+			  };
+			  res.setIndex(args);
+			  res.setList(tweets);
+			  Transport.addIndexWithDocs(res.getIndex(), res.getList());
+			
+			return res;
+		}
+		
+		//Search for a query by a keyword and return a HashMap<index,List<Status>> V3*****************************************************************************
+				public static Tuple searchQueryV3(Twitter twitter) throws IOException, JSONException, TwitterException{
+
+
+			        List<Status> tweets = new ArrayList<>();
+			        //HashMap<String,List<Status>> res = new HashMap<>();
+			        Tuple res=new Tuple();
+					BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+					System.out.println("Insira a sua Query: \n");
+					String args = br.readLine();
+					
+					
+					if(args.length() < 1){
+						System.out.println("java twitter4j.examples.search.SearchTweets [query]");
+			            System.exit(-1);
+					}
+					Query query = new Query(args);
+					query.setCount(100);
+					
+					int searchResultCount;
+					long lowestTweetId = Long.MAX_VALUE;
+					
+					do {
+					    QueryResult queryResult = twitter.search(query);
+					
+					    searchResultCount = queryResult.getTweets().size();
+					
+					    for (Status tweet : queryResult.getTweets()) {
+					
+					        // do whatever with the tweet
+					
+					    	tweets.add(tweet);
+					        if (tweet.getId() < lowestTweetId) {
+					            lowestTweetId = tweet.getId();
+					            query.setMaxId(lowestTweetId);
+					        }
+					    }
+					
+					} while (searchResultCount != 0 && searchResultCount % 100 == 0);
+					
+					  res.setIndex(args);
+					  res.setList(tweets);
+					
+					return res;
+				}
+				
 	//Search for a query by a keyword
-		public static List<Tweets> searchQuerybyDate(Twitter twitter) throws IOException{
+		public static JSONObject searchQuerybyDate(Twitter twitter) throws IOException, JSONException{
+			JSONObject json= new JSONObject();
+	        JSONArray array=new JSONArray();
+	        List<HttpEntity> listHttp=new ArrayList<>();
 			BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 			List<Tweets> tweetsList = new ArrayList<>();
 			System.out.println("Insira a sua Query: \n");
@@ -294,29 +473,36 @@ public class TweetAPI {
 						List<Status> tweets = result.getTweets();
 						System.out.println(tweets.size());
 						for (Status tweet : tweets) {
-							Tweets tweetItem = new Tweets();
-							tweetItem.setTweetText(tweet.getText());
-							tweetItem.setTweetUserName(tweet.getUser().getScreenName());
-							tweetItem.setId(tweet.getId());
+							JSONObject item = new JSONObject();
+							item.put("ID", tweet.getId());		     			
+							item.put("TweetLang", tweet.getLang());		     		
+							item.put("Text", tweet.getText());		     			
+							item.put("Screen_name", tweet.getUser().getScreenName());		     			
+							item.put("Language", tweet.getUser().getLang());		     			
+							item.put("Name", tweet.getUser().getName());
+							item.put("Location", tweet.getUser().getLocation());
+							HttpEntity ent=RestAPI.createHttpEntity(Long.toString(tweet.getId()), tweet.getText(),
+									tweet.getUser().getScreenName(), tweet.getUser().getName(), tweet.getUser().getLocation(),
+									tweet.getUser().getLocation());
 							
-							System.out.println(
-									"@" + tweet.getUser().getScreenName() + "|" + tweet.getText() + "|" + tweet.isRetweeted());
-							tweetsList.add(tweetItem);
+							listHttp.add(ent);
+							array.put(item);
 						}
 					} while ((query = result.nextQuery()) != null);
 				} catch (TwitterException e) {
 					e.printStackTrace();
 				}
-				return tweetsList;
+				json.put("Tweets", array);
+				return json;
 		}
 		
 		
 	//get the twittes from  user
-	public static List<Status> Usertweets(Twitter twitter, String twitterID)  
-	         throws TwitterException {    
-	      List<Status> statuses = twitter.getUserTimeline(twitterID);  
-	      return statuses;  
-	   } 
+	//public static List<Status> Usertweets(Twitter twitter, String twitterID)  
+	//         throws TwitterException {    
+	//      List<Status> statuses = twitter.getUserTimeline(twitterID);  
+	//      return statuses;  
+	 //  } 
 	
     public static List<String> elasticJson(Twitter twitter) throws TwitterException {
         Query query = new Query("motogp");
@@ -337,6 +523,33 @@ public class TweetAPI {
         return tweetList.stream().map(gson::toJson).collect(Collectors.toList());  	
        
     }
+    
+    
+    // Get all tweets from user
+    
+    public static List<Status> getAllUsertweets(Twitter twitter,String user){
+    	int pag = 1;
+    	List<Status> statuses = new ArrayList<>();
+
+    	while (true) {
+    	  try {
+
+    	    int size = statuses.size(); 
+    	    Paging page = new Paging(pag++, 100);
+    	    statuses.addAll(twitter.getUserTimeline(user, page));
+    	    if (statuses.size() == size)
+    	      break;
+    	  }
+    	  catch(TwitterException e) {
+
+    	    e.printStackTrace();
+    	  }
+    	}
+
+    	System.out.println("Total: "+statuses.size()+" Tweets");
+    	
+    	return statuses;
+	}
 	
 	public static String linkifyTweet(String tweet) {
 	      Pattern pattern;

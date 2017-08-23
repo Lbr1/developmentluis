@@ -1,14 +1,28 @@
 package main.java.pt.uminho.sisbi.twitter.api;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.ParseException;
+import org.apache.http.entity.ContentType;
+import org.apache.http.nio.entity.NStringEntity;
+import org.apache.http.util.EntityUtils;
 import org.apache.lucene.index.MergePolicy.OneMergeProgress.PauseReason;
 import org.apache.lucene.store.SleepingLockWrapper;
+import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.client.Response;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.transport.TransportClient;
 
 import com.google.gson.Gson;
 
+import POJO.Tuple;
 import pt.uminho.sisbi.twitter.api.TweetAPI;
-import restClient.restAPI;
+import restClient.RestAPI;
+import transportClient.Transport;
 import twitter4j.*;
 import twitter4j.auth.AccessToken;
 import twitter4j.conf.*;
@@ -19,7 +33,7 @@ import twitter4j.conf.*;
  */
 public class App 
 {
-    public static void main( String[] args ) throws TwitterException, IOException, JSONException
+    public static void main( String[] args ) throws TwitterException, IOException, JSONException, IllegalStateException, InterruptedException
     {
     	
     	//TweetAPI api = new TweetAPI();
@@ -49,7 +63,137 @@ public class App
         
         
         
-        restAPI.cenas();
+        
+        
+        
+        menuP();
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        //JSONObject obj=new JSONObject();
+        //obj=TweetAPI.newTweetsJson(twitter);
+
+        //lista=TweetAPI.getTextFromJson(obj);
+        
+		//for (String str: lista)
+		//{
+		   
+		//	System.out.println("-> "+str+"\n");
+		    
+			
+		//}
+        
+        List<String> idList= new ArrayList<>();
+        List<HttpEntity> httpList=new ArrayList<>();
+        String jsonString = "{" +
+        		            "\"user\":\"Luisinho1\"," +
+        		           "\"postDate\":\"198\"," +
+        		          "\"message\":\"esta a começar a andar1\"" +
+        		        "}";
+        
+        String jsonString2 = "{" +
+	            "\"user\":\"Luisinho2\"," +
+	           "\"postDate\":\"1988\"," +
+	          "\"message\":\"esta a começar a andar2\"" +
+	        "}";
+        
+        String jsonString3 = "{" +
+	            "\"user\":\"Luisinho3\"," +
+	           "\"postDate\":\"988\"," +
+	          "\"message\":\"esta a começar a andar3\"" +
+	        "}";
+        //Transport.deleteIndexDocs("asdasdafsw");
+        //JSONObject item = new JSONObject(jsonString2);
+        //JSONObject item2 = new JSONObject(jsonString);
+        //JSONObject item3 = new JSONObject(jsonString3);
+ 
+        
+       
+       //Transport.getListOfIndex();
+       //httpList.add(entity4);
+        
+      //HttpEntity[] listaHttp = new HttpEntity[httpList.size()];
+		      //listaHttp[0]=entity1;
+		      //listaHttp[1]=entity2;
+		      //listaHttp[1]=entity3;
+       
+      //RestAPI.putListOfTweets("asdasdafsw", "tweet", httpList.toArray(listaHttp));
+		        //idList.add(item.getString("postDate"));
+		        //idList.add(item2.getString("postDate"));
+		        //idList.add(item3.getString("postDate"));
+		        
+		        //List<String> posts=new ArrayList<>();
+		        //posts=Transport.getListOfPostsDocs("super","_type","tweet");
+		       // for(String tw:posts){
+		       // 	System.out.println(tw+"\n");
+		       // }
+        	  /*
+              Tuple res2=new Tuple();
+
+		       res2=TweetAPI.searchQueryV2(twitter);
+
+		       System.out.println("Numero de Tweets "+ res2.getList().size());
+
+		       for (Status tw : res2.getList()) {
+		    	   System.out.println("data "+ tw.getCreatedAt());
+		    	   System.out.println("ID "+ tw.getId());
+		    	   System.out.println("");
+		       }
+		       
+		       */
+           
+		       //Transport.addIndexWithDocs(res2.getIndex(),res2.getList());
+		      /*  int count=0; ******************************************************************************
+		        System.out.println("Status "+ status.size());
+		        List<HttpEntity> listHttp=new ArrayList<>();
+		        for (Status tweet : status) {
+		        	//System.out.println("Iteracao "+ count++);
+					//JSONObject item = new JSONObject();
+		        	//item.put("ID", tweet.getId());	
+		        	//System.out.println("ID"+ tweet.getId());
+		        	//item.put("TweetLang", tweet.getLang());
+		        	//System.out.println("TweetLang"+ tweet.getLang());
+		        	//item.put("Text", tweet.getText());	
+		        	//System.out.println("Text"+ tweet.getText());
+		        	//item.put("Screen_name", tweet.getUser().getScreenName());		     					     			
+		        	//item.put("Name", tweet.getUser().getName());
+		        	//item.put("Location", tweet.getUser().getLocation());
+					String ent=RestAPI.createString(Long.toString(tweet.getId()),tweet.getLang(), tweet.getText(),
+							tweet.getUser().getScreenName(), tweet.getUser().getName(),
+							tweet.getUser().getLocation());
+					RestAPI.putNewDoc(ent,"asdasdafsw", "tweet");
+					TimeUnit.SECONDS.sleep(3);
+					//System.out.println("Ent "+ ent.getContentLength());
+					//listHttp.add(ent);
+					//System.out.println("listHttp "+ listHttp.size());
+					//array.put(item);
+				}*/
+		        //HttpEntity[] httpArray = new HttpEntity[ listHttp.size() ];
+		        //RestAPI.putListOfTweets("asdasdafsw", "tweet", listHttp.toArray(httpArray));
+       // Transport.deleteDocByQuery("asdasdafsw", "Location", "Lisboa");
+		       //RestClient restClient=RestAPI.initAPI(); 
+       //RestAPI.putNewDoc(jsonString3, "posts","doc");
+       //Response response=RestAPI.putNewDoc(jsonString3, "posts","file");
+        //String res=RestAPI.getFromIndex("GET", "/posts/file/_search");
+        //Response response=RestAPI.SearchDocQueryDSL("postDate", "988", "posts");
+        //System.out.println(EntityUtils.toString(response.getEntity()));
+       //System.out.println(res);
+       //RestAPI.putNewDoc(jsonString3, "posts","file");
+       //RestAPI.closeAPI(restClient);
+       //Transport.deleteIndexDocs("asdasdafsw");
+       //Transport.deleteDocByQuery("posts", "_type", "file");;
        // search for user and return a json
         /*
         System.out.println("Procurando.....");
@@ -224,5 +368,179 @@ public class App
 	    */
 }
     
+    public static Twitter twitterToken(){
+    	//Consumer Key
+        String consumerKey = "9Q0DpYL9vJtZcuxNinsA1RjWn";
+        //Consumer Secret
+        String consumerSecret = "qohM464rRWVYXcNPmrOI7qhkqO1HJHjtGDXkxl0MsLTMdr7AAw";
+        //Access Token
+        String accessToken = "2841171466-dL9I79GWTG6QKEZW5Swy3e455EXermjkDGycTng";
+        //Access Token Secret
+        String accessTokenSecret = "tccuixlMuOK7r4H2Eu7jWVa5MDlp9FOohqkX3nbjSNU8N";
+        
+      //Instantiate a re-usable and thread-safe factory
+        TwitterFactory twitterFactory = new TwitterFactory();
+      //Instantiate a new Twitter instance
+        Twitter twitter = twitterFactory.getInstance();
+      //setup OAuth Consumer Credentials
+        twitter.setOAuthConsumer(consumerKey, consumerSecret);
+      //setup OAuth Access Token
+        twitter.setOAuthAccessToken(new AccessToken(accessToken, accessTokenSecret));
+        
+    	return twitter;
+    }
+    public static void menuP() throws IOException, ParseException, JSONException, IllegalStateException, TwitterException, InterruptedException{
+    	do {
+            System.out.println("\n\n          DataMining Menu");
+            System.out.println("--------------------------------------");
+            System.out.println("--------------GET's-------------");
+            System.out.println("--------------------------------------");
+            System.out.println("1  - Show OPEN Index");
+            System.out.println("2  - GET docs for Query");
+            System.out.println("3  - GET ALL docs from Index");
+            System.out.println("4  - GET X docs from Index");
+            System.out.println("5  - GET POSTS from a Index");
+            System.out.println("6  - GET X docs from Index and Type");
+            System.out.println("7  - GET JSON with docs from Index and Type by ScrollAPI");
+            System.out.println("8  - GET POSTS from Index and Type by ScrollAPI");
+            System.out.println("--------------------------------------");
+            System.out.println("--------------PUT's-------------");
+            System.out.println("--------------------------------------");
+            System.out.println("9  - PUT my tweets on elasticSearch");
+            System.out.println("10 - PUT tweets from a USER on elasticSearch");
+            System.out.println("11 - PUT X tweets with a keyword on elasticSearch");
+            System.out.println("--------------------------------------");
+            System.out.println("--------------DELETE's-------------");
+            System.out.println("--------------------------------------");
+            System.out.println("12 - DELETE an Index");
+            System.out.println("13 - DELETE a Doc with an ID");
+            System.out.println("14 - DELETE a Doc for Term");
+            System.out.println("--------------------------------------");
+            System.out.println("--------------EXIT-------------");
+            System.out.println("--------------------------------------");
+            System.out.println("0 - EXIT");
+            System.out.print("\nSelect a Menu Option: ");
+        try {
+        	BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+			String args = br.readLine();
+            int input = Integer.parseInt(args); 
+            String indexDir="";
+            String key="";
+            String value="";
+            int size=0;
+            Response res=null;
+            List<String> textList = new ArrayList<>();
+            List<JSONObject> listJson = new ArrayList<>();
+            Twitter twitter=twitterToken();
+
+
+            switch (input) {
+            case 1:  System.out.println("\n\n ------ Index ------");
+            		 Transport.getListOfIndex();
+            		 System.out.println("\n\n");
+                     break;
+            case 2:  System.out.println("Insert the Index: \n");
+					 indexDir = br.readLine();
+					 System.out.println("Insert the key: \n");
+					 key = br.readLine();
+					 System.out.println("Insert the text: \n");
+					 value = br.readLine();
+					 res=RestAPI.SearchDoc(key,value,indexDir);
+					 System.out.println("Response-> "+EntityUtils.toString(res.getEntity()));
+                     break;
+            case 3:  System.out.println("Insert the Index: \n");
+					 indexDir = br.readLine();
+					 res=RestAPI.SearchAllDocQueryDSL(indexDir);
+					 System.out.println("Response-> "+EntityUtils.toString(res.getEntity()));
+					 break;
+            case 4:  System.out.println("Insert the Index: \n");
+					 indexDir = br.readLine();
+					 System.out.println("Insert number of Documents: \n");
+					 size=Integer.parseInt(br.readLine());
+					 res=RestAPI.SearchAllDocQueryDSLSize(indexDir, size);
+					 System.out.println("Response-> "+EntityUtils.toString(res.getEntity()));
+					 break;
+            case 5:  System.out.println("Insert the Index: \n");
+					 indexDir = br.readLine();
+					 System.out.println("Insert number of Documents: \n");
+					 size=Integer.parseInt(br.readLine());
+					 res=RestAPI.SearchAllDocQueryDSLSize(indexDir, size);
+					 textList=RestAPI.getPosts(EntityUtils.toString(res.getEntity()));
+					 for(String st:textList){
+						 System.out.println("Post-> "+st);
+					 }
+					 break;
+            case 6:  System.out.println("Insert the Index: \n");
+					 indexDir = br.readLine();
+					 System.out.println("Insert the type of Documents:: \n");
+					 value = br.readLine();
+					 System.out.println("Insert number of Documents: \n");
+					 size=Integer.parseInt(br.readLine());
+					 String resString=RestAPI.getFromIndexAndType(indexDir, value, size);
+					 System.out.println("JSON-> "+resString);
+					 break;
+            case 7:  System.out.println("Insert the Index: \n");
+					 indexDir = br.readLine();
+					 System.out.println("Insert the key: \n");
+					 key = br.readLine();
+					 System.out.println("Insert the text: \n");
+					 value = br.readLine();
+					 listJson=Transport.getListOfJsonDocs(indexDir, key, value);
+					 System.out.println("JSON-> "+listJson);
+					 break;
+            case 8:  System.out.println("Insert the Index: \n");
+					 indexDir = br.readLine();
+					 System.out.println("Insert the key: \n");
+					 key = br.readLine();
+					 System.out.println("Insert the text: \n");
+					 value = br.readLine();
+					 textList=Transport.getListOfPostsDocs(indexDir, key, value);
+					 System.out.println("POSTS-> "+textList);
+					 break;
+            case 9:  System.out.println("Inserting....: \n");
+            		 TweetAPI.newTweetsJson(twitter);
+					 break;
+            case 10: System.out.println("Insert the User: \n");
+			 		 indexDir = br.readLine();
+			 		 System.out.println("Inserting....: \n");
+			   		 TweetAPI.putDataforUser(twitter, indexDir);
+			   		 break;
+            case 11: System.out.println("Inserting....: \n");
+			   		 TweetAPI.searchQueryV2(twitter);
+			   		 break;
+            case 12: System.out.println("Insert the Index to delete: \n");
+	 		 		 indexDir = br.readLine();
+			   		 Transport.deleteIndexDocs(indexDir);
+			   		 break;
+            case 13: System.out.println("Insert the Index: \n");
+					 indexDir = br.readLine();
+					 System.out.println("Insira o Type: \n");
+					 key = br.readLine();
+					 System.out.println("Insert the Document ID: \n");
+					 value = br.readLine();
+			   		 Transport.deleteDocById(indexDir, key, value);
+			   		 break;
+            case 14: System.out.println("Insert the Index: \n");
+					 indexDir = br.readLine();
+					 System.out.println("Insert the key: \n");
+					 key = br.readLine();
+					 System.out.println("Insert the text: \n");
+					 value = br.readLine();
+			   		 Transport.deleteDocByQuery(indexDir, key, value);
+			   		 break;
+            case 0: 
+	                System.out.println("Exiting Program...");
+	                System.exit(0);
+                 break;
+            default :
+                     System.out.println("This is not a valid Menu Option! Please Select Another");
+                     break;
+            
+           }
+          } catch (NumberFormatException e) { System.out.println(e); }
+
+        }
+        while(true);
+    }
     
 }

@@ -2,10 +2,40 @@ package main.java.pt.uminho.sisbi.twitter.api;
 
 public class Tweets {
 
+	private Long id;
+	private String tweetLang;
+	private String tweetText;
+	private String screen_name;
+	private String language;
     private String tweetUserName;
-    private String tweetText;
-    private Long id;
-    public Long getId() {
+    private String location;
+    
+    
+    public String getTweetLang() {
+		return tweetLang;
+	}
+	public void setTweetLang(String tweetLang) {
+		this.tweetLang = tweetLang;
+	}
+	public String getScreen_name() {
+		return screen_name;
+	}
+	public void setScreen_name(String screen_name) {
+		this.screen_name = screen_name;
+	}
+	public String getLanguage() {
+		return language;
+	}
+	public void setLanguage(String language) {
+		this.language = language;
+	}
+	public String getLocation() {
+		return location;
+	}
+	public void setLocation(String location) {
+		this.location = location;
+	}
+	public Long getId() {
 		return id;
 	}
 	public void setId(Long id) {

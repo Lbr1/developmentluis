@@ -24,6 +24,7 @@ import org.apache.http.util.EntityUtils;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.Response;
@@ -296,17 +297,20 @@ public class RestAPI {
 	//Search the document using Query Params
 
 			
-	public Response SearchDoc(String keyvalue,String indexDir,RestClient restClient) throws IOException{
+	public static Response SearchDoc(String key,String value,String indexDir) throws IOException{
+		RestClient restClient = initAPI();
 		Map<String, String> paramMap = new HashMap<String, String>();
-		paramMap.put("q", keyvalue);
+		paramMap.put("q", key+":"+value);
 		paramMap.put("pretty", "true");
 		                               
-		Response response = restClient.performRequest("GET", indexDir,paramMap);
+		Response response = restClient.performRequest("GET", indexDir+"/_search",paramMap);
+		closeAPI(restClient);
 		return response;
 	}	
 	//Search all the documents using Query DSL
 
-		public Response SearchAllDocQueryDSL(String indexDir,RestClient restClient) throws IOException{
+		public static Response SearchAllDocQueryDSL(String indexDir) throws IOException{
+			RestClient restClient = initAPI();
 			HttpEntity entity1 = new NStringEntity(
 					 "{\n" +
 					"    \"query\" : {\n" +
@@ -314,14 +318,17 @@ public class RestAPI {
 					"} \n"+
 					"}", ContentType.APPLICATION_JSON);
 						                                                               
-					Response response = restClient.performRequest("GET", indexDir,Collections.singletonMap("pretty", "true"),
+					Response response = restClient.performRequest("GET", indexDir+"/_search",Collections.singletonMap("pretty", "true"),
 						                                                           entity1);
+					
+			closeAPI(restClient);
 			return response;
 		}		
 	
 	//Search all the documents using Query DSL with size
 
-	public Response SearchAllDocQueryDSLSize(String indexDir,Integer size,RestClient restClient) throws IOException{
+	public static Response SearchAllDocQueryDSLSize(String indexDir,Integer size) throws IOException{
+		RestClient restClient = initAPI();
 		HttpEntity entity1 = new NStringEntity(
 			 "{\"from\" : 0, \"size\" :"+size+",\n" +
 				"    \"query\" : {\n" +
@@ -331,11 +338,28 @@ public class RestAPI {
 								                                                               
 			Response response = restClient.performRequest("GET", "/"+indexDir+"/_search",Collections.singletonMap("pretty", "true"),
 								                                                           entity1);
+			closeAPI(restClient);
 			return response;
 	}		
+	
+	//Search all the documents using Query DSL with size
+
+		public static Response SearchAllDocQueryDSLSizeExists(String indexDir,String key, String value) throws IOException{
+			RestClient restClient = initAPI();
+			
+			GetRequest getRequest = new GetRequest("index", "type", "id");
+			getRequest.storedFields(new String[0]);
+			Map<String, String> paramMap = new HashMap<String, String>();
+			paramMap.put("q", key+":"+value);
+			paramMap.put("pretty", "true");	                                                               
+			Response response = restClient.performRequest("GET", "/"+indexDir+"/tweet/_search/exists",paramMap);
+			closeAPI(restClient);
+			return response;
+		}		
+		
 	//Search the document using Query DSL
 
-	public static Response SearchDocQueryDSL	(String key,String value,String indexDir) throws IOException{
+	public static Response SearchDocQueryDSL(String key,String value,String indexDir) throws IOException{
 		RestClient restClient = initAPI();
 		HttpEntity entity1 = new NStringEntity(
 				 "{\n" +
@@ -352,9 +376,9 @@ public class RestAPI {
 
 	//get a String with documents jsonformat from a index 
 	
-	public static String getFromIndex(String method,String index) throws IOException{
+	public static String getFromIndex(String index) throws IOException{
 		RestClient restClient = initAPI();
-		Response response = restClient.performRequest(method, "/"+index+"/_search");
+		Response response = restClient.performRequest("GET", "/"+index+"/_search");
 		String stringResponse =EntityUtils.toString(response.getEntity());
 		closeAPI(restClient);
 		return stringResponse;
@@ -362,12 +386,19 @@ public class RestAPI {
 	
 	//get a String with documents jsonformat from a index with type
 	
-	public static String getFromIndexAndType(String method,String index,String type) throws IOException{
+	public static String getFromIndexAndType(String index,String type,int size) throws IOException{
 		RestClient restClient = initAPI();
-		Response response = restClient.performRequest(method, "/"+index+"/"+type+"/_search");
-		String stringResponse =EntityUtils.toString(response.getEntity());
+		HttpEntity entity1 = new NStringEntity(
+				 "{\"from\" : 0, \"size\" :"+size+",\n" +
+					"    \"query\" : {\n" +
+					"    \"match_all\": { } \n" +
+					"} \n"+
+				"}", ContentType.APPLICATION_JSON);
+									                                                               
+				Response response = restClient.performRequest("GET", "/"+index+"/"+type+"/_search",Collections.singletonMap("pretty", "true"),
+									                                                           entity1);
 		closeAPI(restClient);
-		return stringResponse;
+		return EntityUtils.toString(response.getEntity());
 	}
 	
 	
@@ -426,19 +457,15 @@ public class RestAPI {
 		//String response=EntityUtils.toString(response51.getEntity());
 		JSONObject json =new JSONObject(response);
 		JSONObject obj = json.getJSONObject("hits");
-		System.out.println("objeto -> "+obj);
-		System.out.println("Teste hits -> max_score "+obj.getString("max_score"));
 		JSONArray arr = obj.getJSONArray("hits");
 		for (int i = 0; i < arr.length(); i++)
 		{
 		   
 		    JSONObject source =new JSONObject(arr.getJSONObject(i).getString("_source"));
-		    textList.add(source.getString("text"));
+		    textList.add(source.getString("Text"));
 		    
 			
 		}
-		//String palavra = obj.getString("message");
-		System.out.println("Texts -> "+textList);
 		return textList;
 	}
 	
@@ -478,14 +505,13 @@ public class RestAPI {
 		{
 			JSONObject source =new JSONObject(arr.getJSONObject(i).getString("_source"));
 			JSONObject item = new JSONObject();
-			item.put("ID", source.getLong("id"));
-			item.put("TweetLang", source.getString("lang"));
-			item.put("Text", source.getString("text"));
+			item.put("id", source.getLong("id"));
+			item.put("lang", source.getString("lang"));
+			item.put("text", source.getString("text"));
 			JSONObject user = source.getJSONObject("user");
-			item.put("Screen_name", user.getString("screen_name"));
-			item.put("Language", user.getString("lang"));
-			item.put("Name", user.getString("name"));
-			item.put("Location", user.getString("location"));
+			item.put("screen_name", user.getString("screen_name"));
+			item.put("name", user.getString("name"));
+			item.put("location", user.getString("location"));
 			jsonList.add(item);
 			}
 			jsonListFinal.put("Tweet", jsonList);
@@ -507,14 +533,13 @@ public class RestAPI {
 
 			JSONObject source =new JSONObject(arr.getJSONObject(i).getString("_source"));
 			JSONObject item = new JSONObject();
-			item.put("ID", source.getLong("id"));
-			item.put("TweetLang", source.getString("lang"));
-			item.put("Text", source.getString("text"));
+			item.put("id", source.getLong("id"));
+			item.put("lang", source.getString("lang"));
+			item.put("text", source.getString("text"));
 			JSONObject user = source.getJSONObject("user");
-			item.put("Screen_name", user.getString("screen_name"));
-			item.put("Language", user.getString("lang"));
-			item.put("Name", user.getString("name"));
-			item.put("Location", user.getString("location"));
+			item.put("screen_name", user.getString("screen_name"));
+			item.put("name", user.getString("name"));
+			item.put("location", user.getString("location"));
 			jsonList.add(item);
 			}
 			jsonListFinal.put("Tweet", jsonList);
@@ -522,9 +547,22 @@ public class RestAPI {
 	}
 	
 	//Create a httpEntiy from string
-	public static HttpEntity createHttpEntity(String id,String tweetLang, String text, String screenName, String language,
-		String name, String location){
+	public static HttpEntity createHttpEntity(String id,String tweetLang, String text, String screenName,
+		String name, String location) throws JSONException{
 		
+		JSONObject obj = new JSONObject();
+
+		obj.put("id", id);
+		obj.put("lang", tweetLang);
+		obj.put("text", text);
+		obj.put("screen_name", screenName);
+		obj.put("name", name);
+		obj.put("location", location);
+
+		// etc.
+
+		final String jsonString = obj.toString();
+		/*
 		String jsonString = "{" +
 	            "\"ID\":\""+id+"\"," +
 	           "\"TweetLang\":\""+tweetLang+"\"," +
@@ -534,24 +572,28 @@ public class RestAPI {
 	           "\"Name\":\""+name+"\","+
 	          "\"Location\":\""+location+"\"" +
 	        "}";
-		
+		*/
+		System.out.println("String -> "+jsonString);
 		HttpEntity entity= new NStringEntity(
 				 jsonString, ContentType.APPLICATION_JSON);
 		return entity;	
 	}
 	//Create a string
-		public static String createString(String id,String tweetLang, String text, String screenName, String language,
-			String name, String location){
+		public static String createString(String id,String tweetLang, String text, String screenName,
+				String name, String location) throws JSONException{
 			
-			String jsonString = "{" +
-		            "\"ID\":\""+id+"\"," +
-		           "\"TweetLang\":\""+tweetLang+"\"," +
-		           "\"Text\":\""+text+"\","+
-		           "\"Screen_name\":\""+screenName+"\","+
-		           "\"Language\":\""+language+"\","+
-		           "\"Name\":\""+name+"\","+
-		          "\"Location\":\""+location+"\"" +
-		        "}";
+			JSONObject obj = new JSONObject();
+
+			obj.put("id", id);
+			obj.put("lang", tweetLang);
+			obj.put("text", text);
+			obj.put("screen_name", screenName);
+			obj.put("name", name);
+			obj.put("location", location);
+
+			// etc.
+
+			final String jsonString = obj.toString();
 			
 			
 			return jsonString;	
