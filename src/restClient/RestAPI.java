@@ -357,6 +357,16 @@ public class RestAPI {
 			return response;
 		}		
 		
+//Search all the documents using Query DSL with size
+
+	public static Response existsDoc(String indexDir, String id) throws IOException{
+		RestClient restClient = initAPI();
+					
+		Response response = restClient.performRequest("HEAD","/"+indexDir+"/tweet/"+id);     
+		closeAPI(restClient);
+		return response;
+	}	
+		
 	//Search the document using Query DSL
 
 	public static Response SearchDocQueryDSL(String key,String value,String indexDir) throws IOException{

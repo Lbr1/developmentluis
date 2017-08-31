@@ -20,6 +20,7 @@ import org.elasticsearch.client.transport.TransportClient;
 import com.google.gson.Gson;
 
 import POJO.Tuple;
+import mongoDB.MongoDB;
 import pt.uminho.sisbi.twitter.api.TweetAPI;
 import restClient.RestAPI;
 import transportClient.Transport;
@@ -65,8 +66,12 @@ public class App
         
         
         
-        
-        menuP();
+        Response res=RestAPI.existsDoc("sporting", "90011023513796984");
+
+        System.out.println(res.getStatusLine());
+
+        //menuP();
+        //MongoDB.exem();
         
         
         
